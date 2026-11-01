@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { BudgetPanel } from "@/components/budget-panel"
 import { DayOfPanel } from "@/components/day-of-panel"
 import { IdeasPanel } from "@/components/ideas-panel"
@@ -12,8 +13,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   EVENT_LABELS,
   countdownLabel,
+  formatPlanText,
   type DayScheduleRow,
   type Plan,
+  type Priority,
   type VendorItem,
 } from "@/lib/plan"
 
@@ -24,6 +27,7 @@ export function PlanWorkspace({
   disabled,
   onBudget,
   onToggleTask,
+  onAddTask,
   onVendor,
   onAddVendor,
   onRemoveVendor,
@@ -38,14 +42,20 @@ export function PlanWorkspace({
   disabled: boolean
   onBudget: (id: string, estimateInr: number) => void
   onToggleTask: (id: string, done: boolean) => void
+  onAddTask?: (input: { title: string; dueDate: string; priority: Priority }) => void
   onVendor: (id: string, patch: Partial<VendorItem>) => void
   onAddVendor: () => void
   onRemoveVendor: (id: string) => void
   onFollowUp: (value: string) => void
   onRefine: () => void
   onClear: () => void
-  onDaySchedule: (id: string, patch: Partial<Pick<DayScheduleRow, "time" | "moment" | "note">>) => void
+  onDaySchedule: (
+    id: string,
+    patch: Partial<Pick<DayScheduleRow, "time" | "moment" | "note">>,
+  ) => void
 }) {
+  const [copied, setCopied] = useState(false)
+
   if (!plan) {
     return (
       <div className="grid gap-3 rounded-2xl border border-dashed border-border bg-card/70 p-6">
@@ -55,6 +65,17 @@ export function PlanWorkspace({
         </p>
       </div>
     )
+  }
+
+  async function handleCopy() {
+    if (!plan || typeof navigator === "undefined" || !navigator.clipboard) return
+    try {
+      await navigator.clipboard.writeText(formatPlanText(plan))
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      setCopied(false)
+    }
   }
 
   return (
@@ -70,14 +91,32 @@ export function PlanWorkspace({
             </Badge>
           </div>
           <p className="text-sm text-muted-foreground">
-            <time dateTime={plan.brief.eventDate}>{countdownLabel(plan.brief.eventDate)}</time>
+            <time dateTime={plan.brief.eventDate}>
+              {countdownLabel(plan.brief.eventDate)}
+            </time>
             {" · "}
             {plan.brief.guestCount} guests
           </p>
         </div>
-        <Button type="button" variant="ghost" disabled={disabled} onClick={onClear}>
-          Clear saved plan
-        </Button>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={disabled}
+            onClick={() => void handleCopy()}
+          >
+            {copied ? "Copied summary" : "Copy summary"}
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            disabled={disabled}
+            onClick={onClear}
+          >
+            Clear saved plan
+          </Button>
+        </div>
       </div>
       {plan.source === "sample" ? (
         <Alert>
@@ -110,12 +149,19 @@ export function PlanWorkspace({
           <BudgetPanel
             lines={plan.budgetLines}
             capInr={plan.brief.budgetInr}
+            guestCount={plan.brief.guestCount}
             disabled={disabled}
             onChange={onBudget}
           />
         </TabsContent>
         <TabsContent value="timeline" className="pt-2">
-          <TimelinePanel tasks={plan.tasks} disabled={disabled} onToggle={onToggleTask} />
+          <TimelinePanel
+            tasks={plan.tasks}
+            defaultDate={plan.brief.eventDate}
+            disabled={disabled}
+            onToggle={onToggleTask}
+            onAddTask={onAddTask}
+          />
         </TabsContent>
         <TabsContent value="vendors" className="pt-2">
           <VendorPanel

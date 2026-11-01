@@ -6,6 +6,12 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import type { Idea } from "@/lib/plan"
 
+const QUICK_PROMPTS = [
+  "Keep the food simple and home-style",
+  "Lower decor cost and use local flowers",
+  "Add a weather backup and shade plan",
+] as const
+
 export function IdeasPanel({
   ideas,
   followUp,
@@ -45,6 +51,20 @@ export function IdeasPanel({
         }}
       >
         <Label htmlFor="follow-up">Change the plan</Label>
+        <div className="flex flex-wrap gap-1.5">
+          {QUICK_PROMPTS.map((suggestion) => (
+            <Button
+              key={suggestion}
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={disabled}
+              onClick={() => onFollowUp(suggestion)}
+            >
+              {suggestion}
+            </Button>
+          ))}
+        </div>
         <Textarea
           id="follow-up"
           className="min-h-20"

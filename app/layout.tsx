@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import type { ReactNode } from "react"
 import { Fraunces, Source_Sans_3 } from "next/font/google"
 import "./globals.css"
 
@@ -15,10 +16,12 @@ const fraunces = Fraunces({
 export const metadata: Metadata = {
   title: "Mehfil — celebration planner",
   description:
-    "Plan a wedding, birthday, or community gathering with a budget, a timeline, a vendor checklist, and ideas you can edit.",
+    "Plan a wedding, birthday, or community gathering with a budget, a timeline, a vendor checklist, personalized ideas, and a day-of schedule you can edit.",
 }
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({
+  children,
+}: Readonly<{ children: ReactNode }>) {
   return (
     <html
       lang="en"

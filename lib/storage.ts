@@ -6,7 +6,7 @@ import {
   parseIsoDate,
   sortTasks,
 } from "@/lib/format"
-import { normalizeGeneratedPlan, validateBrief } from "@/lib/plan"
+import { normalizeGeneratedPlan, validateBrief } from "@/lib/validation"
 import {
   DIETS,
   EVENT_TYPES,
@@ -49,6 +49,7 @@ function parseBriefLoose(input: unknown): Brief | null {
   }
 }
 
+/** Safely parse and sanitize a persisted plan from browser storage or client payload. */
 export function parseStoredPlan(value: unknown): Plan | null {
   const record = asRecord(value)
   if (!record) return null
@@ -158,6 +159,7 @@ export function parseStoredPlan(value: unknown): Plan | null {
   }
 }
 
+/** Validate the incoming POST /api/plan request payload. */
 export function parsePlanRequest(
   body: unknown,
   today = new Date(),
@@ -211,6 +213,7 @@ export function parsePlanRequest(
   return { ok: true, brief: briefResult.brief, followUp, currentPlan }
 }
 
+/** Strip private host-entered vendor contact details before sending a plan to Gemini. */
 export function planForPrompt(plan: Plan) {
   return {
     summary: plan.summary,

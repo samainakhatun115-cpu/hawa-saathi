@@ -1,26 +1,31 @@
 "use client"
 
+import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
   budgetSnapshot,
   formatInr,
+  perGuestInr,
   type BudgetLine,
 } from "@/lib/plan"
 
 export function BudgetPanel({
   lines,
   capInr,
+  guestCount = 1,
   disabled,
   onChange,
 }: {
   lines: BudgetLine[]
   capInr: number
+  guestCount?: number
   disabled: boolean
   onChange: (id: string, estimateInr: number) => void
 }) {
   const snapshot = budgetSnapshot(lines, capInr)
   const meterMax = Math.max(snapshot.capInr, snapshot.plannedInr, 1)
+  const perGuest = perGuestInr(snapshot.plannedInr, guestCount)
 
   return (
     <div className="grid gap-4">
@@ -31,9 +36,16 @@ export function BudgetPanel({
             <span className="font-normal text-muted-foreground">
               {" "}
               of {formatInr(snapshot.capInr)}
+              {perGuest > 0 ? ` · ~${formatInr(perGuest)}/guest` : ""}
             </span>
           </p>
-          <p className={snapshot.overBudget ? "text-sm font-medium text-destructive" : "text-sm text-muted-foreground"}>
+          <p
+            className={
+              snapshot.overBudget
+                ? "text-sm font-medium text-destructive"
+                : "text-sm text-muted-foreground"
+            }
+          >
             {snapshot.overBudget
               ? `${formatInr(snapshot.overByInr)} over budget`
               : `${formatInr(snapshot.remainingInr)} still open`}
@@ -49,7 +61,9 @@ export function BudgetPanel({
           className="h-2 overflow-hidden rounded-full bg-muted"
         >
           <div
-            className={snapshot.overBudget ? "h-full bg-destructive" : "h-full bg-primary"}
+            className={
+              snapshot.overBudget ? "h-full bg-destructive" : "h-full bg-primary"
+            }
             style={{ width: `${Math.min(snapshot.percent, 100)}%` }}
           />
         </div>
@@ -59,9 +73,17 @@ export function BudgetPanel({
       </div>
       <ul className="grid gap-3">
         {lines.map((line) => (
-          <li key={line.id} className="grid gap-2 rounded-xl border border-border bg-card p-3 sm:grid-cols-[1fr_9rem] sm:items-end">
+          <li
+            key={line.id}
+            className="grid gap-2 rounded-xl border border-border bg-card p-3 sm:grid-cols-[1fr_9rem] sm:items-end"
+          >
             <div>
-              <p className="font-medium">{line.category}</p>
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="font-medium">{line.category}</p>
+                {line.amountLocked ? (
+                  <Badge variant="outline">Locked</Badge>
+                ) : null}
+              </div>
               <p className="text-sm text-muted-foreground">{line.note}</p>
             </div>
             <div className="grid gap-1.5">

@@ -1,7 +1,10 @@
 import {
   addDays,
+  cleanDate,
+  cleanText,
   formatInr,
   formatIsoDate,
+  isOneOf,
   makeId,
   parseIsoDate,
   sortTasks,
@@ -10,13 +13,16 @@ import {
 import {
   DIET_LABELS,
   EVENT_LABELS,
+  PRIORITIES,
   VENUE_LABELS,
   type Brief,
   type BudgetLine,
   type DayScheduleRow,
   type Idea,
   type Plan,
+  type PlanTask,
   type Priority,
+  type VendorItem,
 } from "@/lib/types"
 
 export interface Share {
@@ -60,10 +66,11 @@ function sharesFor(brief: Brief): Share[] {
   ]
 }
 
+/** Allocate a total INR budget across percentage shares without rounding drift. */
 export function allocateBudget(
   totalInr: number,
   shares: Share[],
-  idFor: (kind: string) => string,
+  idFor: (kind: string) => string = makeId,
 ): BudgetLine[] {
   const total = Math.max(0, Math.round(totalInr))
   const amounts = shares.map((share) => Math.round((total * share.share) / 100))
@@ -213,6 +220,7 @@ function ideaTemplates(brief: Brief, idFor: (kind: string) => string): Idea[] {
   return ideas.slice(0, 4).map((idea) => ({ ...idea, id: idFor(idea.title) }))
 }
 
+/** Build a 7-step suggested day-of schedule tailored to the event brief. */
 export function buildDaySchedule(
   brief: Brief,
   idFor: (kind: string) => string = makeId,
@@ -284,6 +292,7 @@ export function buildDaySchedule(
   }))
 }
 
+/** Build a complete local sample plan without calling Gemini. */
 export function buildSamplePlan(
   brief: Brief,
   options?: {
@@ -327,5 +336,39 @@ export function buildSamplePlan(
     source: "sample",
     createdAt: nowIso,
     updatedAt: nowIso,
+  }
+}
+
+/** Create a user-added vendor row with no invented contact details. */
+export function blankVendor(idFor: (kind: string) => string = makeId): VendorItem {
+  return {
+    id: idFor("extra-vendor"),
+    category: "Extra vendor",
+    why: "Added by you. Type the real contact.",
+    status: "pending",
+    contactName: "",
+    contactPhone: "",
+    quoteInr: null,
+    detailsLocked: true,
+    userAdded: true,
+  }
+}
+
+/** Create a user-added timeline task with validated title, due date, and priority. */
+export function blankTask(
+  input: { title: string; dueDate: string; priority?: Priority },
+  fallbackDate: string,
+  idFor: (kind: string) => string = makeId,
+): PlanTask | null {
+  const title = cleanText(input.title, 140)
+  if (!title) return null
+  const priority = isOneOf(input.priority, PRIORITIES) ? input.priority : "medium"
+  return {
+    id: idFor("custom-task"),
+    title,
+    dueDate: cleanDate(input.dueDate, fallbackDate),
+    priority,
+    done: false,
+    doneLocked: true,
   }
 }

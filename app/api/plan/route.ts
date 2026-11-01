@@ -10,10 +10,20 @@ export const maxDuration = 30
 const BODY_LIMIT = 100_000
 const TIMEOUT_MS = 20_000
 
-function jsonError(status: number, error: string, message: string, errors?: object) {
+const RESPONSE_HEADERS = {
+  "Cache-Control": "no-store, max-age=0",
+  "X-Content-Type-Options": "nosniff",
+} as const
+
+function jsonError(
+  status: number,
+  error: string,
+  message: string,
+  errors?: object,
+) {
   return Response.json(
     { error, message, ...(errors ? { errors } : {}) },
-    { status },
+    { status, headers: RESPONSE_HEADERS },
   )
 }
 
@@ -63,7 +73,7 @@ export async function POST(request: Request) {
     const plan = parsed.currentPlan
       ? mergeRefinement(parsed.currentPlan, generated, nowIso, parsed.brief)
       : generated
-    return Response.json({ plan })
+    return Response.json({ plan }, { headers: RESPONSE_HEADERS })
   } catch (error) {
     const reason = error instanceof Error ? error.message : "unknown"
     console.error("plan generation failed:", reason)
@@ -81,7 +91,8 @@ export async function POST(request: Request) {
         "Gemini returned a plan that was missing a budget, timeline, vendor list, or ideas. Try again.",
       )
     }
-    const upstreamStatus = error instanceof Error ? /^GEMINI_(\d+)$/.exec(error.message)?.[1] : undefined
+    const upstreamStatus =
+      error instanceof Error ? /^GEMINI_(\d+)$/.exec(error.message)?.[1] : undefined
     if (upstreamStatus === "401" || upstreamStatus === "403") {
       return jsonError(
         502,

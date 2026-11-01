@@ -1,14 +1,15 @@
 "use client"
 
+import { ChoiceField } from "@/components/choice-field"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
   VENDOR_STATUS_LABELS,
+  formatInr,
   type VendorItem,
   type VendorStatus,
 } from "@/lib/plan"
-import { ChoiceField } from "@/components/choice-field"
 
 export function VendorPanel({
   vendors,
@@ -23,14 +24,31 @@ export function VendorPanel({
   onAdd: () => void
   onRemove: (id: string) => void
 }) {
+  const confirmedCount = vendors.filter((v) => v.status === "confirmed").length
+  const quotedCount = vendors.filter((v) => v.status === "quoted").length
+  const pendingCount = vendors.filter((v) => v.status === "pending").length
+  const quotedTotal = vendors.reduce(
+    (sum, v) => sum + (typeof v.quoteInr === "number" ? v.quoteInr : 0),
+    0,
+  )
+
   return (
     <div className="grid gap-3">
-      <p className="text-sm text-muted-foreground">
-        These are categories, not shop listings. Type a real contact only if you already have one. Mehfil will not invent a phone number.
-      </p>
+      <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
+        <p>
+          These are categories, not shop listings. Type a real contact only if you already have one. Mehfil will not invent a phone number.
+        </p>
+        <p className="text-xs font-medium text-foreground">
+          {confirmedCount} confirmed · {quotedCount} quoted · {pendingCount} pending
+          {quotedTotal > 0 ? ` · Quotes ${formatInr(quotedTotal)}` : ""}
+        </p>
+      </div>
       <ul className="grid gap-3">
         {vendors.map((vendor) => (
-          <li key={vendor.id} className="grid gap-3 rounded-xl border border-border bg-card p-3">
+          <li
+            key={vendor.id}
+            className="grid gap-3 rounded-xl border border-border bg-card p-3"
+          >
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="font-medium">{vendor.category}</p>
@@ -54,7 +72,9 @@ export function VendorPanel({
                 value={vendor.status}
                 items={VENDOR_STATUS_LABELS}
                 disabled={disabled}
-                onChange={(status: VendorStatus) => onChange(vendor.id, { status, detailsLocked: true })}
+                onChange={(status: VendorStatus) =>
+                  onChange(vendor.id, { status, detailsLocked: true })
+                }
               />
               <div className="grid gap-1.5">
                 <Label htmlFor={`quote-${vendor.id}`}>Their quote (₹)</Label>
@@ -69,7 +89,10 @@ export function VendorPanel({
                   placeholder="Optional"
                   onChange={(event) =>
                     onChange(vendor.id, {
-                      quoteInr: event.target.value === "" ? null : Number(event.target.value),
+                      quoteInr:
+                        event.target.value === ""
+                          ? null
+                          : Number(event.target.value),
                       detailsLocked: true,
                     })
                   }
@@ -102,7 +125,9 @@ export function VendorPanel({
                   value={vendor.contactPhone}
                   onChange={(event) =>
                     onChange(vendor.id, {
-                      contactPhone: event.target.value.replace(/[^\d+\-() ]/g, "").slice(0, 20),
+                      contactPhone: event.target.value
+                        .replace(/[^\d+\-() ]/g, "")
+                        .slice(0, 20),
                       detailsLocked: true,
                     })
                   }

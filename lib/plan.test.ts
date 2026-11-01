@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { buildPrompt } from "@/lib/gemini"
 import {
+  blankTask,
   blankVendor,
   budgetSnapshot,
   budgetTotal,
@@ -8,12 +9,15 @@ import {
   buildSamplePlan,
   countdownLabel,
   formatInr,
+  formatPlanText,
   mergeRefinement,
   normalizeGeneratedPlan,
   parsePlanRequest,
   parseStoredPlan,
+  perGuestInr,
   planForPrompt,
   sortTasks,
+  taskProgress,
   validateBrief,
   type Brief,
   type PlanTask,
@@ -45,9 +49,11 @@ function sample(overrides?: Partial<Brief>, budget = brief.budgetInr) {
 }
 
 describe("budget", () => {
-  it("sums line estimates and formats INR currency", () => {
+  it("sums line estimates, formats INR, and computes per-guest spend", () => {
     expect(budgetTotal([{ estimateInr: 1200 }, { estimateInr: 800 }])).toBe(2000)
     expect(formatInr(20000)).toContain("20,000")
+    expect(perGuestInr(21000, 30)).toBe(700)
+    expect(perGuestInr(20000, 0)).toBe(0)
   })
 
   it("flags an over-budget plan and reports the gap", () => {
@@ -80,17 +86,22 @@ describe("budget", () => {
 })
 
 describe("timeline and countdown", () => {
-  it("orders tasks by date, then by priority", () => {
+  it("orders tasks by date, then by priority, and tracks completion progress", () => {
     const tasks = [
       task("low", "2026-11-02"),
       task("low", "2026-11-01"),
-      task("high", "2026-11-01"),
+      { ...task("high", "2026-11-01"), done: true },
     ]
     expect(sortTasks(tasks).map((item) => `${item.dueDate}:${item.priority}`)).toEqual([
       "2026-11-01:high",
       "2026-11-01:low",
       "2026-11-02:low",
     ])
+    expect(taskProgress(tasks)).toEqual({
+      doneCount: 1,
+      totalCount: 3,
+      percent: 33,
+    })
   })
 
   it("pulls early tasks forward when the event is soon", () => {
@@ -105,7 +116,16 @@ describe("timeline and countdown", () => {
     )
   })
 
-  it("formats countdown labels for today, tomorrow, future, and past dates", () => {
+  it("creates validated custom tasks and formats countdown labels", () => {
+    const custom = blankTask(
+      { title: "Confirm tent backup", dueDate: "2026-11-20", priority: "high" },
+      brief.eventDate,
+      ids(),
+    )
+    expect(custom?.title).toBe("Confirm tent backup")
+    expect(custom?.doneLocked).toBe(true)
+    expect(blankTask({ title: "   ", dueDate: "2026-11-20" }, brief.eventDate)).toBeNull()
+
     expect(countdownLabel("2026-10-25", today)).toBe("Today")
     expect(countdownLabel("2026-10-26", today)).toBe("Tomorrow")
     expect(countdownLabel("2026-11-04", today)).toBe("In 10 days")
@@ -113,9 +133,9 @@ describe("timeline and countdown", () => {
   })
 })
 
-describe("sample plan and day-of schedule", () => {
-  it("does not invent vendor contacts", () => {
-    const plan = sample()
+describe("sample plan, day-of schedule, and export", () => {
+  it("does not invent vendor contacts and exports readable summary text", () => {
+    const plan = sample({ city: "Karnal" })
     expect(plan.source).toBe("sample")
     expect(plan.vendors.length).toBeGreaterThan(0)
     for (const vendor of plan.vendors) {
@@ -124,6 +144,9 @@ describe("sample plan and day-of schedule", () => {
       expect(vendor.quoteInr).toBeNull()
     }
     expect(plan.summary.toLowerCase()).toContain("not a live gemini")
+    const exported = formatPlanText(plan)
+    expect(exported).toContain("Birthday in Karnal")
+    expect(exported).toContain("Suggested Day-Of Schedule:")
   })
 
   it("builds a 7-row day-of schedule tailored to the city and setting", () => {
