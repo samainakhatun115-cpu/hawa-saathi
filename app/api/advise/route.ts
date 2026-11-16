@@ -4,6 +4,8 @@ import { GeminiError } from "@/lib/gemini"
 import { fetchAirSnapshot } from "@/lib/open-meteo"
 import { parseAdviseRequest } from "@/lib/validation"
 
+export const maxDuration = 30
+
 export async function POST(request: Request) {
   let body: unknown
   try {

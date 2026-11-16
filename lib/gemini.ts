@@ -2,7 +2,7 @@ import { readGeminiKey, readServerEnv } from "@/lib/env"
 
 const DEFAULT_MODEL = "gemini-3.5-flash-lite"
 const FALLBACK_MODEL = "gemini-3.6-flash"
-const TIMEOUT_MS = 10_000
+const TIMEOUT_MS = 12_000
 
 export class GeminiError extends Error {
   constructor(
