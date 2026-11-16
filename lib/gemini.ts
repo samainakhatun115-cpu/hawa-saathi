@@ -1,8 +1,8 @@
 import { readGeminiKey, readServerEnv } from "@/lib/env"
 
-const DEFAULT_MODEL = "gemini-3.5-flash"
-const FALLBACK_MODEL = "gemini-2.5-flash"
-const TIMEOUT_MS = 12_000
+const DEFAULT_MODEL = "gemini-3.5-flash-lite"
+const FALLBACK_MODEL = "gemini-3.6-flash"
+const TIMEOUT_MS = 15_000
 
 export class GeminiError extends Error {
   constructor(
@@ -25,7 +25,7 @@ export async function generateJson<T>(input: {
   }
 
   const model = readServerEnv("GEMINI_MODEL") || DEFAULT_MODEL
-  const models = model === FALLBACK_MODEL ? [model] : [model, FALLBACK_MODEL]
+  const models = unique([model, DEFAULT_MODEL, FALLBACK_MODEL])
   let lastError: unknown
 
   for (const next of models) {
@@ -61,7 +61,6 @@ async function callGemini<T>(
         systemInstruction: { parts: [{ text: input.system }] },
         contents: [{ role: "user", parts: [{ text: input.user }] }],
         generationConfig: {
-          temperature: 0.4,
           responseMimeType: "application/json",
           responseSchema: input.schema,
           thinkingConfig: { thinkingBudget: 0 },
@@ -95,6 +94,10 @@ async function callGemini<T>(
   } catch {
     throw new GeminiError("Gemini returned text that was not valid JSON.")
   }
+}
+
+function unique(values: string[]) {
+  return [...new Set(values.filter(Boolean))]
 }
 
 function isTimeout(error: unknown) {
