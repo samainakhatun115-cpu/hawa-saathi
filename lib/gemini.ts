@@ -63,7 +63,7 @@ async function callGemini<T>(
         generationConfig: {
           responseMimeType: "application/json",
           responseSchema: input.schema,
-          thinkingConfig: { thinkingBudget: 0, thinkingLevel: "minimal" },
+          thinkingConfig: { thinkingBudget: 0 },
         },
       }),
     })
