@@ -12,7 +12,7 @@ Live use: pick a city (or share location), say who it is for and what they need 
 
 1. **Numbers first.** Live PM2.5, PM10, ozone, NO₂, SO₂, and CO come from [Open-Meteo Air Quality](https://open-meteo.com/en/docs/air-quality-api) (no API key). If that call fails, the app uses a **labeled sample snapshot** instead of inventing readings.
 2. **A local rules engine locks the decision.** CPCB National AQI PM2.5 breakpoints (0–30 Good, 31–60 Satisfactory, 61–90 Moderate, 91–120 Poor, 121–250 Very Poor, 250+ Severe) produce a category and a 0–500 sub-index. Persona + activity + duration then map to `go` / `caution` / `limit` / `indoor` and a mask suggestion. Gemini cannot change that verdict.
-3. **Gemini writes the words, not the science.** The server sends the locked numbers and verdict to Gemini (`gemini-3.6-flash`, `thinkingBudget: 0`) and asks for a short plan in plain English. If the key is missing, the same rules engine fills the plan so the app still works.
+3. **Gemini writes the words, not the science.** The server sends the locked numbers and verdict to Gemini (`gemini-3.5-flash`, `thinkingBudget: 0`) and asks for a short plan in plain English. If the key is missing or Gemini is slow, the same rules engine fills the plan so the app still works.
 4. **Honest labels.** The CPCB-style band is an **estimate from PM2.5**, not an official CPCB / SAFAR station AQI. Advice is practical, not medical.
 
 ## How it works
@@ -63,7 +63,7 @@ Open [http://127.0.0.1:43127](http://127.0.0.1:43127). Without a key, you still 
 | `npm run build` | Production build |
 | `npm run lint` | ESLint |
 
-Deploy on Vercel. Add `GEMINI_API_KEY` in project settings. Optional: `GEMINI_MODEL` (default `gemini-3.6-flash`).
+Deploy on Vercel. Add `GEMINI_API_KEY` in project settings. Optional: `GEMINI_MODEL` (default `gemini-3.5-flash`).
 
 ## Scoring notes
 

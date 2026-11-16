@@ -30,15 +30,17 @@ export async function POST(request: Request) {
       headers: { "Cache-Control": "no-store" },
     })
   } catch (error) {
-    if (error instanceof GeminiError && error.status === 503) {
-      return Response.json(
-        { ...localAdvisory(profile, snapshot), fallback: true, notice: error.message },
-        { headers: { "Cache-Control": "no-store" } },
-      )
+    if (error instanceof GeminiError && (error.status === 401 || error.status === 403)) {
+      return jsonError(error.message, error.status)
     }
-    const message = error instanceof GeminiError ? error.message : "Could not write the advisory."
-    const status = error instanceof GeminiError ? error.status ?? 502 : 502
-    return jsonError(message, status)
+    const notice =
+      error instanceof GeminiError
+        ? error.message
+        : "Gemini took too long, so this plan used the local rules engine."
+    return Response.json(
+      { ...localAdvisory(profile, snapshot), fallback: true, notice },
+      { headers: { "Cache-Control": "no-store" } },
+    )
   }
 }
 

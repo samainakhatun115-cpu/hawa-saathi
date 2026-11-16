@@ -92,4 +92,14 @@ describe("POST /api/advise", () => {
     expect(json.fallback).toBe(true)
     expect(json.decision.verdict).toBe("indoor")
   })
+
+  it("falls back to the rules engine when Gemini times out", async () => {
+    generate.mockRejectedValue(new GeminiError("Gemini timed out.", 408))
+    const response = await post(profile)
+    expect(response.status).toBe(200)
+    const json = await response.json()
+    expect(json.model).toBe("rules-engine")
+    expect(json.fallback).toBe(true)
+    expect(json.notice).toMatch(/timed out/i)
+  })
 })

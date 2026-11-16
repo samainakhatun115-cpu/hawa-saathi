@@ -1,8 +1,8 @@
 import { readGeminiKey, readServerEnv } from "@/lib/env"
 
-const DEFAULT_MODEL = "gemini-3.6-flash"
-const FALLBACK_MODEL = "gemini-3.5-flash"
-const TIMEOUT_MS = 20_000
+const DEFAULT_MODEL = "gemini-3.5-flash"
+const FALLBACK_MODEL = "gemini-2.5-flash"
+const TIMEOUT_MS = 12_000
 
 export class GeminiError extends Error {
   constructor(
@@ -25,14 +25,21 @@ export async function generateJson<T>(input: {
   }
 
   const model = readServerEnv("GEMINI_MODEL") || DEFAULT_MODEL
-  try {
-    return { data: await callGemini<T>(key, model, input), model }
-  } catch (error) {
-    if (error instanceof GeminiError && (error.status === 404 || error.status === 429)) {
-      return { data: await callGemini<T>(key, FALLBACK_MODEL, input), model: FALLBACK_MODEL }
+  const models = model === FALLBACK_MODEL ? [model] : [model, FALLBACK_MODEL]
+  let lastError: unknown
+
+  for (const next of models) {
+    try {
+      return { data: await callGemini<T>(key, next, input), model: next }
+    } catch (error) {
+      lastError = error
+      if (error instanceof GeminiError && (error.status === 401 || error.status === 403)) {
+        throw error
+      }
     }
-    throw error
   }
+
+  throw lastError instanceof Error ? lastError : new GeminiError("Gemini request failed.", 502)
 }
 
 async function callGemini<T>(
@@ -41,24 +48,32 @@ async function callGemini<T>(
   input: { system: string; user: string; schema: Record<string, unknown> },
 ): Promise<T> {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-goog-api-key": key,
-    },
-    signal: AbortSignal.timeout(TIMEOUT_MS),
-    body: JSON.stringify({
-      systemInstruction: { parts: [{ text: input.system }] },
-      contents: [{ role: "user", parts: [{ text: input.user }] }],
-      generationConfig: {
-        temperature: 0.4,
-        responseMimeType: "application/json",
-        responseSchema: input.schema,
-        thinkingConfig: { thinkingBudget: 0 },
+  let response: Response
+  try {
+    response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": key,
       },
-    }),
-  })
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: input.system }] },
+        contents: [{ role: "user", parts: [{ text: input.user }] }],
+        generationConfig: {
+          temperature: 0.4,
+          responseMimeType: "application/json",
+          responseSchema: input.schema,
+          thinkingConfig: { thinkingBudget: 0 },
+        },
+      }),
+    })
+  } catch (error) {
+    if (isTimeout(error)) {
+      throw new GeminiError("Gemini timed out.", 408)
+    }
+    throw new GeminiError("Could not reach Gemini.", 502)
+  }
 
   if (!response.ok) {
     const status = response.status
@@ -80,6 +95,13 @@ async function callGemini<T>(
   } catch {
     throw new GeminiError("Gemini returned text that was not valid JSON.")
   }
+}
+
+function isTimeout(error: unknown) {
+  return (
+    (error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError")) ||
+    (typeof DOMException !== "undefined" && error instanceof DOMException && error.name === "TimeoutError")
+  )
 }
 
 export { DEFAULT_MODEL, FALLBACK_MODEL }
