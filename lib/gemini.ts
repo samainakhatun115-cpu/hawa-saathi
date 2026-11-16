@@ -1,7 +1,7 @@
 import { readGeminiKey, readServerEnv } from "@/lib/env"
 
 const DEFAULT_MODEL = "gemini-3.5-flash-lite"
-const FALLBACK_MODEL = "gemini-3.6-flash"
+const FALLBACK_MODELS = ["gemini-3.6-flash", "gemini-3.8-flash"]
 const TIMEOUT_MS = 12_000
 
 export class GeminiError extends Error {
@@ -24,11 +24,13 @@ export async function generateJson<T>(input: {
     throw new GeminiError("Add GEMINI_API_KEY on the server to generate a personalized advisory.", 503)
   }
 
-  const model = readServerEnv("GEMINI_MODEL") || DEFAULT_MODEL
-  const models = unique([model, DEFAULT_MODEL, FALLBACK_MODEL])
+  const preferred = readServerEnv("GEMINI_MODEL") || DEFAULT_MODEL
+  const models = unique([preferred, DEFAULT_MODEL, ...FALLBACK_MODELS])
+  const tried: string[] = []
   let lastError: unknown
 
   for (const next of models) {
+    tried.push(next)
     try {
       return { data: await callGemini<T>(key, next, input), model: next }
     } catch (error) {
@@ -39,7 +41,8 @@ export async function generateJson<T>(input: {
     }
   }
 
-  throw lastError instanceof Error ? lastError : new GeminiError("Gemini request failed.", 502)
+  const detail = lastError instanceof Error ? lastError.message : "Gemini request failed."
+  throw new GeminiError(`${detail} Tried ${tried.join(", ")}.`, lastError instanceof GeminiError ? lastError.status : 502)
 }
 
 async function callGemini<T>(
@@ -48,6 +51,8 @@ async function callGemini<T>(
   input: { system: string; user: string; schema: Record<string, unknown> },
 ): Promise<T> {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS)
   let response: Response
   try {
     response = await fetch(url, {
@@ -56,14 +61,13 @@ async function callGemini<T>(
         "Content-Type": "application/json",
         "x-goog-api-key": key,
       },
-      signal: AbortSignal.timeout(TIMEOUT_MS),
+      signal: controller.signal,
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: input.system }] },
         contents: [{ role: "user", parts: [{ text: input.user }] }],
         generationConfig: {
           responseMimeType: "application/json",
           responseSchema: input.schema,
-          thinkingConfig: { thinkingBudget: 0 },
         },
       }),
     })
@@ -72,6 +76,8 @@ async function callGemini<T>(
       throw new GeminiError("Gemini timed out.", 408)
     }
     throw new GeminiError("Could not reach Gemini.", 502)
+  } finally {
+    clearTimeout(timer)
   }
 
   if (!response.ok) {
@@ -107,4 +113,4 @@ function isTimeout(error: unknown) {
   )
 }
 
-export { DEFAULT_MODEL, FALLBACK_MODEL }
+export { DEFAULT_MODEL, FALLBACK_MODELS }
