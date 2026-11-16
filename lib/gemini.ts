@@ -1,3 +1,5 @@
+import { readGeminiKey, readServerEnv } from "@/lib/env"
+
 const DEFAULT_MODEL = "gemini-3.6-flash"
 const FALLBACK_MODEL = "gemini-3.5-flash"
 const TIMEOUT_MS = 20_000
@@ -17,12 +19,12 @@ export async function generateJson<T>(input: {
   user: string
   schema: Record<string, unknown>
 }): Promise<{ data: T; model: string }> {
-  const key = process.env.GEMINI_API_KEY?.trim()
+  const key = readGeminiKey()
   if (!key) {
     throw new GeminiError("Add GEMINI_API_KEY on the server to generate a personalized advisory.", 503)
   }
 
-  const model = process.env.GEMINI_MODEL?.trim() || DEFAULT_MODEL
+  const model = readServerEnv("GEMINI_MODEL") || DEFAULT_MODEL
   try {
     return { data: await callGemini<T>(key, model, input), model }
   } catch (error) {
