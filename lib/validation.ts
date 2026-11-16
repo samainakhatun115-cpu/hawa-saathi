@@ -1,261 +1,76 @@
+import { findCity } from "@/lib/cities"
 import {
-  addDays,
-  asRecord,
-  cleanDate,
-  cleanMoney,
-  cleanText,
-  isOneOf,
-  makeId,
-  parseIsoDate,
-  sortTasks,
-  startOfDay,
-} from "@/lib/format"
-import { buildDaySchedule } from "@/lib/sample-plan"
-import {
-  DIETS,
-  EVENT_LABELS,
-  EVENT_TYPES,
-  LIMITS,
-  PRIORITIES,
-  VENUE_STYLES,
-  type Brief,
-  type BudgetLine,
-  type DayScheduleRow,
-  type Diet,
-  type EventType,
-  type FieldErrors,
-  type Idea,
-  type Plan,
-  type PlanSource,
-  type PlanTask,
-  type VendorItem,
-  type VenueStyle,
+  ACTIVITIES,
+  DURATIONS,
+  PERSONAS,
+  WINDOWS,
+  type Activity,
+  type AdviseRequest,
+  type Duration,
+  type Persona,
+  type TimeWindow,
 } from "@/lib/types"
 
-/** Validate an untrusted event brief input and return field-level errors if invalid. */
-export function validateBrief(
-  input: unknown,
-  today = new Date(),
-): { ok: true; brief: Brief } | { ok: false; errors: FieldErrors; message: string } {
-  const record = asRecord(input)
-  if (!record) {
-    return {
-      ok: false,
-      errors: {},
-      message: "The event brief needs to be an object.",
-    }
-  }
+const MAX_NOTES = 280
+const MAX_CITY_NAME = 80
 
-  const errors: FieldErrors = {}
-  if (!isOneOf(record.eventType, EVENT_TYPES)) {
-    errors.eventType = "Choose a wedding, birthday, or community gathering."
-  }
-  const eventDate = cleanText(record.eventDate, 10)
-  const parsedDate = parseIsoDate(eventDate)
-  if (!parsedDate) {
-    errors.eventDate = "Use a real date."
-  } else {
-    const earliest = addDays(startOfDay(today), -365)
-    const latest = addDays(startOfDay(today), 365 * 3)
-    if (parsedDate < earliest || parsedDate > latest) {
-      errors.eventDate = "Pick a date within the next three years."
-    }
-  }
+function isKey<T extends Record<string, string>>(table: T, value: unknown): value is keyof T {
+  return typeof value === "string" && value in table
+}
 
-  const city = cleanText(record.city, LIMITS.city)
-  if (city.length < 2) errors.city = "Add the city or town."
+function asNumber(value: unknown, min: number, max: number): number | undefined {
+  if (typeof value !== "number" || !Number.isFinite(value)) return undefined
+  if (value < min || value > max) return undefined
+  return value
+}
 
-  const guestCount = Number(record.guestCount)
-  if (!Number.isInteger(guestCount) || guestCount < LIMITS.guestsMin) {
-    errors.guestCount = "Add at least 1 guest."
-  } else if (guestCount > LIMITS.guestsMax) {
-    errors.guestCount = "Keep the guest count at 5,000 or below."
-  }
+export function parseAdviseRequest(body: unknown): { ok: true; value: AdviseRequest } | { ok: false; error: string } {
+  if (!body || typeof body !== "object") return { ok: false, error: "Send a JSON profile." }
+  const data = body as Record<string, unknown>
 
-  const budgetInr = Number(record.budgetInr)
-  if (!Number.isFinite(budgetInr) || budgetInr < LIMITS.budgetMin) {
-    errors.budgetInr = "Set a budget of at least ₹500."
-  } else if (budgetInr > LIMITS.budgetMax) {
-    errors.budgetInr = "That budget is too large for this planner."
-  }
+  if (!isKey(PERSONAS, data.persona)) return { ok: false, error: "Pick who this advice is for." }
+  if (!isKey(ACTIVITIES, data.activity)) return { ok: false, error: "Pick what you need to do outdoors." }
+  if (!isKey(DURATIONS, data.duration)) return { ok: false, error: "Pick how long you will be out." }
+  if (!isKey(WINDOWS, data.window)) return { ok: false, error: "Pick when this is happening." }
 
-  if (!isOneOf(record.diet, DIETS)) errors.diet = "Choose a food preference."
-  if (!isOneOf(record.venueStyle, VENUE_STYLES)) {
-    errors.venueStyle = "Choose indoor or outdoor."
-  }
+  const notes = typeof data.notes === "string" ? data.notes.trim().slice(0, MAX_NOTES) : ""
+  const cityId = typeof data.cityId === "string" ? data.cityId : ""
+  const city = findCity(cityId)
+  const latitude = asNumber(data.latitude, -90, 90)
+  const longitude = asNumber(data.longitude, -180, 180)
+  const cityName =
+    typeof data.cityName === "string" ? data.cityName.trim().slice(0, MAX_CITY_NAME) : undefined
 
-  const wish = cleanText(record.wish, LIMITS.wish)
-  if (typeof record.wish === "string" && record.wish.length > LIMITS.wish) {
-    errors.wish = "Keep the note under 1,000 characters."
-  }
-
-  if (Object.keys(errors).length > 0) {
-    return {
-      ok: false,
-      errors,
-      message: "Fix the highlighted fields before generating a plan.",
-    }
+  if (!city && (latitude === undefined || longitude === undefined)) {
+    return { ok: false, error: "Pick a city, or allow location so we can use nearby air data." }
   }
 
   return {
     ok: true,
-    brief: {
-      eventType: record.eventType as EventType,
-      eventDate,
-      city,
-      guestCount,
-      budgetInr: Math.round(budgetInr),
-      diet: record.diet as Diet,
-      venueStyle: record.venueStyle as VenueStyle,
-      wish,
+    value: {
+      cityId: city?.id ?? "custom",
+      cityName: city?.name ?? cityName,
+      persona: data.persona as Persona,
+      activity: data.activity as Activity,
+      duration: data.duration as Duration,
+      window: data.window as TimeWindow,
+      notes,
+      latitude: latitude ?? city?.latitude,
+      longitude: longitude ?? city?.longitude,
     },
   }
 }
 
-/** Normalize raw Gemini JSON output, stripping any hallucinated vendor contacts. */
-export function normalizeGeneratedPlan(
-  raw: unknown,
-  brief: Brief,
-  source: PlanSource,
-  nowIso: string,
-  idFor: (kind: string) => string = makeId,
-): Plan {
-  const record = asRecord(raw)
-  if (!record) throw new Error("EMPTY_PLAN")
-
-  const seen = new Set<string>()
-  const nextId = (kind: string, requested?: unknown) => {
-    const candidate = cleanText(requested, 80)
-    if (candidate && !seen.has(candidate)) {
-      seen.add(candidate)
-      return candidate
-    }
-    let id = idFor(kind)
-    while (seen.has(id)) id = idFor(kind)
-    seen.add(id)
-    return id
-  }
-
-  const budgetLines = (Array.isArray(record.budgetLines) ? record.budgetLines : [])
-    .slice(0, LIMITS.lists)
-    .map((item): BudgetLine | null => {
-      const line = asRecord(item)
-      if (!line) return null
-      const category = cleanText(line.category, 80)
-      if (!category) return null
-      return {
-        id: nextId("budget", line.id),
-        category,
-        estimateInr: cleanMoney(line.estimateInr),
-        note: cleanText(line.note, LIMITS.text) || "Estimate, not a confirmed price.",
-        amountLocked: false,
-      }
-    })
-    .filter((line): line is BudgetLine => line !== null)
-
-  const tasks = sortTasks(
-    (Array.isArray(record.tasks) ? record.tasks : [])
-      .slice(0, LIMITS.lists)
-      .map((item): PlanTask | null => {
-        const task = asRecord(item)
-        if (!task) return null
-        const title = cleanText(task.title, 140)
-        if (!title) return null
-        const priority = isOneOf(task.priority, PRIORITIES) ? task.priority : "medium"
-        return {
-          id: nextId("task", task.id),
-          title,
-          dueDate: cleanDate(task.dueDate, brief.eventDate),
-          priority,
-          done: false,
-          doneLocked: false,
-        }
-      })
-      .filter((task): task is PlanTask => task !== null),
-  )
-
-  const vendors = (Array.isArray(record.vendors) ? record.vendors : [])
-    .slice(0, LIMITS.lists)
-    .map((item): VendorItem | null => {
-      const vendor = asRecord(item)
-      if (!vendor) return null
-      const category = cleanText(vendor.category, 80)
-      if (!category) return null
-      return {
-        id: nextId("vendor", vendor.id),
-        category,
-        why:
-          cleanText(vendor.why, LIMITS.text) ||
-          "A category to contact yourself. Not a real listing.",
-        status: "pending",
-        contactName: "",
-        contactPhone: "",
-        quoteInr: null,
-        detailsLocked: false,
-        userAdded: false,
-      }
-    })
-    .filter((vendor): vendor is VendorItem => vendor !== null)
-
-  const ideas = (Array.isArray(record.ideas) ? record.ideas : [])
-    .slice(0, 8)
-    .map((item): Idea | null => {
-      const idea = asRecord(item)
-      if (!idea) return null
-      const title = cleanText(idea.title, 80)
-      const detail = cleanText(idea.detail, LIMITS.text)
-      if (!title || !detail) return null
-      return { id: nextId("idea", idea.id), title, detail }
-    })
-    .filter((idea): idea is Idea => idea !== null)
-
-  if (
-    budgetLines.length === 0 ||
-    tasks.length === 0 ||
-    vendors.length === 0 ||
-    ideas.length === 0
-  ) {
-    throw new Error("EMPTY_PLAN")
-  }
-
-  const summary =
-    cleanText(record.summary, LIMITS.summary) ||
-    `A ${EVENT_LABELS[brief.eventType].toLowerCase()} plan for ${brief.guestCount} guests in ${brief.city}.`
-
-  const rawSchedule = Array.isArray(record.daySchedule) ? record.daySchedule : []
-  const parsedSchedule = rawSchedule
-    .slice(0, 10)
-    .map((item): DayScheduleRow | null => {
-      const row = asRecord(item)
-      if (!row) return null
-      const moment = cleanText(row.moment, 120)
-      if (!moment) return null
-      const rawTime = cleanText(row.time, 5)
-      const time = /^\d{2}:\d{2}$/.test(rawTime) ? rawTime : "12:00"
-      return {
-        id: nextId("day", row.id),
-        time,
-        moment,
-        note: cleanText(row.note, LIMITS.text),
-        locked: false,
-      }
-    })
-    .filter((row): row is DayScheduleRow => row !== null)
-
-  const daySchedule =
-    parsedSchedule.length > 0 ? parsedSchedule : buildDaySchedule(brief, idFor)
-
+export function starterProfile(): AdviseRequest {
   return {
-    id: nextId("plan", record.id),
-    brief,
-    summary,
-    budgetLines,
-    tasks,
-    vendors,
-    ideas,
-    daySchedule,
-    source,
-    createdAt: nowIso,
-    updatedAt: nowIso,
+    cityId: "karnal",
+    cityName: "Karnal",
+    persona: "parent",
+    activity: "school_run",
+    duration: "under_30",
+    window: "morning",
+    notes: "Class 3 child, walks to the school gate.",
+    latitude: 29.6857,
+    longitude: 76.9905,
   }
 }

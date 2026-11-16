@@ -14,9 +14,9 @@ const fraunces = Fraunces({
 })
 
 export const metadata: Metadata = {
-  title: "Mehfil — celebration planner",
+  title: "Hawa Saathi — urban air quality assistant",
   description:
-    "Plan a wedding, birthday, or community gathering with a budget, a timeline, a vendor checklist, personalized ideas, and a day-of schedule you can edit.",
+    "A persona-aware air assistant for Indian cities. It reads live PM2.5, maps a CPCB-style band, and tells you whether to go out, limit time, or stay in.",
 }
 
 export default function RootLayout({

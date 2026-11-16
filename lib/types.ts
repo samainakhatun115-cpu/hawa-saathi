@@ -1,145 +1,122 @@
-export const EVENT_TYPES = ["wedding", "birthday", "community"] as const
-export type EventType = (typeof EVENT_TYPES)[number]
-
-export const DIETS = [
-  "vegetarian",
-  "eggetarian",
-  "non-vegetarian",
-  "vegan",
-  "mixed",
-] as const
-export type Diet = (typeof DIETS)[number]
-
-export const VENUE_STYLES = ["indoor", "outdoor"] as const
-export type VenueStyle = (typeof VENUE_STYLES)[number]
-
-export const VENDOR_STATUSES = ["pending", "quoted", "confirmed"] as const
-export type VendorStatus = (typeof VENDOR_STATUSES)[number]
-
-export const PRIORITIES = ["high", "medium", "low"] as const
-export type Priority = (typeof PRIORITIES)[number]
-
-export const EVENT_LABELS: Record<EventType, string> = {
-  wedding: "Wedding",
-  birthday: "Birthday",
-  community: "Community gathering",
-}
-
-export const DIET_LABELS: Record<Diet, string> = {
-  vegetarian: "Vegetarian",
-  eggetarian: "Eggetarian",
-  "non-vegetarian": "Non-vegetarian",
-  vegan: "Vegan",
-  mixed: "Mixed",
-}
-
-export const VENUE_LABELS: Record<VenueStyle, string> = {
-  indoor: "Indoor",
-  outdoor: "Outdoor",
-}
-
-export const VENDOR_STATUS_LABELS: Record<VendorStatus, string> = {
-  pending: "Pending",
-  quoted: "Quoted",
-  confirmed: "Confirmed",
-}
-
-export const PRIORITY_LABELS: Record<Priority, string> = {
-  high: "High",
-  medium: "Medium",
-  low: "Low",
-}
-
-export interface Brief {
-  eventType: EventType
-  eventDate: string
-  city: string
-  guestCount: number
-  budgetInr: number
-  diet: Diet
-  venueStyle: VenueStyle
-  wish: string
-}
-
-export interface BudgetLine {
-  id: string
-  category: string
-  estimateInr: number
-  note: string
-  amountLocked: boolean
-}
-
-export interface PlanTask {
-  id: string
-  title: string
-  dueDate: string
-  priority: Priority
-  done: boolean
-  doneLocked: boolean
-}
-
-export interface VendorItem {
-  id: string
-  category: string
-  why: string
-  status: VendorStatus
-  contactName: string
-  contactPhone: string
-  quoteInr: number | null
-  detailsLocked: boolean
-  userAdded: boolean
-}
-
-export interface Idea {
-  id: string
-  title: string
-  detail: string
-}
-
-export interface DayScheduleRow {
-  id: string
-  time: string
-  moment: string
-  note: string
-  locked: boolean
-}
-
-export type PlanSource = "gemini" | "sample"
-
-export interface Plan {
-  id: string
-  brief: Brief
-  summary: string
-  budgetLines: BudgetLine[]
-  tasks: PlanTask[]
-  vendors: VendorItem[]
-  ideas: Idea[]
-  daySchedule: DayScheduleRow[]
-  source: PlanSource
-  createdAt: string
-  updatedAt: string
-}
-
-export type FieldErrors = Partial<Record<keyof Brief | "followUp", string>>
-
-export interface BudgetSnapshot {
-  plannedInr: number
-  capInr: number
-  remainingInr: number
-  overByInr: number
-  overBudget: boolean
-  percent: number
-}
-
-export const LIMITS = {
-  city: 80,
-  wish: 1000,
-  followUp: 500,
-  guestsMin: 1,
-  guestsMax: 5000,
-  budgetMin: 500,
-  budgetMax: 50_000_000,
-  text: 240,
-  summary: 500,
-  lists: 16,
+export const PERSONAS = {
+  parent: "Parent of a school-age child",
+  elderly: "Older adult (60+)",
+  asthma: "Someone with asthma or breathing issues",
+  outdoor_worker: "Outdoor / delivery / construction worker",
+  adult: "General adult",
 } as const
+
+export type Persona = keyof typeof PERSONAS
+
+export const ACTIVITIES = {
+  school_run: "School drop / pickup",
+  commute: "Daily commute",
+  outdoor_exercise: "Walk, run, or outdoor play",
+  outdoor_work: "Work that has to happen outdoors",
+  errands: "Short outdoor errands",
+  stay_home: "Planning a stay-home day",
+} as const
+
+export type Activity = keyof typeof ACTIVITIES
+
+export const DURATIONS = {
+  under_30: "Under 30 minutes",
+  one_hour: "About 1 hour",
+  half_day: "Half day",
+  full_day: "Most of the day",
+} as const
+
+export type Duration = keyof typeof DURATIONS
+
+export const WINDOWS = {
+  now: "Right now",
+  morning: "This morning",
+  afternoon: "This afternoon",
+  evening: "This evening",
+} as const
+
+export type TimeWindow = keyof typeof WINDOWS
+
+export const CATEGORIES = [
+  "Good",
+  "Satisfactory",
+  "Moderate",
+  "Poor",
+  "Very Poor",
+  "Severe",
+] as const
+
+export type AqiCategory = (typeof CATEGORIES)[number]
+
+export const VERDICTS = {
+  go: "Go ahead",
+  caution: "Go, but take care",
+  limit: "Limit outdoor time",
+  indoor: "Stay indoors if you can",
+} as const
+
+export type Verdict = keyof typeof VERDICTS
+
+export type City = {
+  id: string
+  name: string
+  state: string
+  latitude: number
+  longitude: number
+}
+
+export type AirSnapshot = {
+  cityId: string
+  cityName: string
+  latitude: number
+  longitude: number
+  observedAt: string
+  source: "open-meteo" | "sample"
+  pm25: number
+  pm10: number
+  ozone: number | null
+  no2: number | null
+  so2: number | null
+  co: number | null
+  europeanAqi: number | null
+  usAqi: number | null
+  cpcbPm25Index: number
+  category: AqiCategory
+  hourlyPm25: Array<{ hour: string; pm25: number; category: AqiCategory }>
+}
+
+export type Profile = {
+  cityId: string
+  persona: Persona
+  activity: Activity
+  duration: Duration
+  window: TimeWindow
+  notes: string
+}
+
+export type Decision = {
+  verdict: Verdict
+  headline: string
+  reasons: string[]
+  actions: string[]
+  mask: "none" | "optional" | "recommended" | "n95"
+  windows: string[]
+  sensitive: boolean
+}
+
+export type Advisory = {
+  snapshot: AirSnapshot
+  decision: Decision
+  summary: string
+  why: string
+  dayPlan: string[]
+  whatNotToDo: string[]
+  disclaimer: string
+  model: string
+}
+
+export type AdviseRequest = Profile & {
+  latitude?: number
+  longitude?: number
+  cityName?: string
+}
