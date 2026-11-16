@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "app/api/advise/route.ts": {
+      "maxDuration": 30
+    }
+  }
+}

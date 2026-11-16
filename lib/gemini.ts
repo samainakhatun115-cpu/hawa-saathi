@@ -2,7 +2,7 @@ import { readGeminiKey, readServerEnv } from "@/lib/env"
 
 const DEFAULT_MODEL = "gemini-3.5-flash-lite"
 const FALLBACK_MODEL = "gemini-3.6-flash"
-const TIMEOUT_MS = 15_000
+const TIMEOUT_MS = 10_000
 
 export class GeminiError extends Error {
   constructor(
@@ -63,7 +63,7 @@ async function callGemini<T>(
         generationConfig: {
           responseMimeType: "application/json",
           responseSchema: input.schema,
-          thinkingConfig: { thinkingBudget: 0 },
+          thinkingConfig: { thinkingBudget: 0, thinkingLevel: "minimal" },
         },
       }),
     })
