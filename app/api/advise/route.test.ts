@@ -100,6 +100,6 @@ describe("POST /api/advise", () => {
     const json = await response.json()
     expect(json.model).toBe("rules-engine")
     expect(json.fallback).toBe(true)
-    expect(json.notice).toMatch(/timed out/i)
+    expect(json.notice).toMatch(/local rules engine/i)
   })
 })

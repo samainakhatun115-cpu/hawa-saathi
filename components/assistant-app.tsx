@@ -33,6 +33,7 @@ export function AssistantApp() {
           longitude: next.longitude ?? city?.longitude,
           cityName: city?.name ?? next.cityName,
         } satisfies AdviseRequest),
+        signal: AbortSignal.timeout(18_000),
       })
       const payload = (await response.json()) as Advisory & { error?: string; notice?: string }
       if (!response.ok) {
@@ -41,8 +42,14 @@ export function AssistantApp() {
       }
       setAdvisory(payload)
       setNotice(payload.notice)
-    } catch {
-      setError("Network error. Check your connection and try again.")
+    } catch (error) {
+      const timedOut =
+        error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError")
+      setError(
+        timedOut
+          ? "That took too long. Tap Should I go out? once more."
+          : "Network error. Check your connection and try again.",
+      )
     } finally {
       setBusy(false)
     }

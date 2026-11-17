@@ -39,7 +39,7 @@ export function AdvisoryPanel({
     <div className="grid gap-4" aria-live="polite">
       {notice ? (
         <Alert>
-          <AlertTitle>Using the local rules engine</AlertTitle>
+          <AlertTitle>Plan is ready</AlertTitle>
           <AlertDescription>{notice}</AlertDescription>
         </Alert>
       ) : null}

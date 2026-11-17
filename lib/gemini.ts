@@ -1,8 +1,7 @@
 import { readGeminiKey, readServerEnv } from "@/lib/env"
 
 const DEFAULT_MODEL = "gemini-3.5-flash-lite"
-const FALLBACK_MODELS = ["gemini-3.6-flash", "gemini-3.8-flash"]
-const TIMEOUT_MS = 12_000
+const TIMEOUT_MS = 7_000
 
 export class GeminiError extends Error {
   constructor(
@@ -24,25 +23,23 @@ export async function generateJson<T>(input: {
     throw new GeminiError("Add GEMINI_API_KEY on the server to generate a personalized advisory.", 503)
   }
 
-  const preferred = readServerEnv("GEMINI_MODEL") || DEFAULT_MODEL
-  const models = unique([preferred, DEFAULT_MODEL, ...FALLBACK_MODELS])
-  const tried: string[] = []
-  let lastError: unknown
+  const extra = readServerEnv("GEMINI_MODEL")
+  const models = unique([DEFAULT_MODEL, extra === DEFAULT_MODEL ? "" : extra])
 
+  let lastError: unknown
   for (const next of models) {
-    tried.push(next)
     try {
       return { data: await callGemini<T>(key, next, input), model: next }
     } catch (error) {
       lastError = error
-      if (error instanceof GeminiError && (error.status === 401 || error.status === 403)) {
-        throw error
-      }
+      if (!(error instanceof GeminiError)) throw error
+      if (error.status === 401 || error.status === 403) throw error
+      // Timeouts and 429s will not get faster on a heavier model.
+      if (error.status === 408 || error.status === 429 || error.status === 503) throw error
     }
   }
 
-  const detail = lastError instanceof Error ? lastError.message : "Gemini request failed."
-  throw new GeminiError(`${detail} Tried ${tried.join(", ")}.`, lastError instanceof GeminiError ? lastError.status : 502)
+  throw lastError instanceof Error ? lastError : new GeminiError("Gemini request failed.", 502)
 }
 
 async function callGemini<T>(
@@ -68,6 +65,7 @@ async function callGemini<T>(
         generationConfig: {
           responseMimeType: "application/json",
           responseSchema: input.schema,
+          thinkingConfig: { thinkingBudget: 0 },
         },
       }),
     })
@@ -113,4 +111,4 @@ function isTimeout(error: unknown) {
   )
 }
 
-export { DEFAULT_MODEL, FALLBACK_MODELS }
+export { DEFAULT_MODEL }

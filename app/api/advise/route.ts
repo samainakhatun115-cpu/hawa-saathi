@@ -4,7 +4,7 @@ import { GeminiError } from "@/lib/gemini"
 import { fetchAirSnapshot } from "@/lib/open-meteo"
 import { parseAdviseRequest } from "@/lib/validation"
 
-export const maxDuration = 30
+export const maxDuration = 15
 
 export async function POST(request: Request) {
   let body: unknown
@@ -36,9 +36,9 @@ export async function POST(request: Request) {
       return jsonError(error.message, error.status)
     }
     const notice =
-      error instanceof GeminiError
+      error instanceof GeminiError && error.status === 503
         ? error.message
-        : "Gemini took too long, so this plan used the local rules engine."
+        : "The air numbers and go / stay-in decision are live. Gemini was slow, so the wording used the local rules engine."
     return Response.json(
       { ...localAdvisory(profile, snapshot), fallback: true, notice },
       { headers: { "Cache-Control": "no-store" } },
