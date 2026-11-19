@@ -56,4 +56,10 @@ describe("persona decisions", () => {
   it("asks people with asthma to stay in during Very Poor air", () => {
     expect(run("asthma", "errands", 180).verdict).toBe("indoor")
   })
+
+  it("writes a stay-in headline the rules engine already decided", () => {
+    const decision = run("parent", "school_run", 110)
+    expect(decision.headline).toMatch(/stay indoors/i)
+    expect(decision.reasons[0]).toMatch(/CPCB-style Poor/)
+  })
 })

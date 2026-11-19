@@ -74,3 +74,22 @@ export function starterProfile(): AdviseRequest {
     longitude: 76.9905,
   }
 }
+
+/** Drop anything localStorage cannot turn into a valid profile. */
+export function sanitizeProfile(raw: unknown): AdviseRequest {
+  const base = starterProfile()
+  if (!raw || typeof raw !== "object") return base
+  const data = raw as Record<string, unknown>
+  const parsed = parseAdviseRequest({
+    cityId: data.cityId ?? base.cityId,
+    cityName: data.cityName ?? base.cityName,
+    persona: data.persona ?? base.persona,
+    activity: data.activity ?? base.activity,
+    duration: data.duration ?? base.duration,
+    window: data.window ?? base.window,
+    notes: typeof data.notes === "string" ? data.notes : base.notes,
+    latitude: data.latitude,
+    longitude: data.longitude,
+  })
+  return parsed.ok ? parsed.value : base
+}

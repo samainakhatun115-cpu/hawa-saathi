@@ -25,6 +25,7 @@ export function ProfileForm({
   return (
     <form
       className="grid gap-4"
+      aria-busy={busy}
       onSubmit={(event) => {
         event.preventDefault()
         onSubmit()

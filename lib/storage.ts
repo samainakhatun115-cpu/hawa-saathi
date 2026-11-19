@@ -1,4 +1,4 @@
-import { starterProfile } from "@/lib/validation"
+import { sanitizeProfile, starterProfile } from "@/lib/validation"
 import type { AdviseRequest } from "@/lib/types"
 
 export const STORAGE_KEY = "hawa-saathi-profile-v1"
@@ -8,13 +8,7 @@ export function readProfile(): AdviseRequest {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY)
     if (!raw) return starterProfile()
-    const parsed = JSON.parse(raw) as Partial<AdviseRequest>
-    const base = starterProfile()
-    return {
-      ...base,
-      ...parsed,
-      notes: typeof parsed.notes === "string" ? parsed.notes.slice(0, 280) : base.notes,
-    }
+    return sanitizeProfile(JSON.parse(raw))
   } catch {
     return starterProfile()
   }

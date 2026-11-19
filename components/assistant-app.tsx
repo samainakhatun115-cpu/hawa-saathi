@@ -2,6 +2,7 @@
 
 import { AdvisoryPanel } from "@/components/advisory-panel"
 import { ProfileForm } from "@/components/profile-form"
+import { SceneChips } from "@/components/scene-chips"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useProfileStore } from "@/hooks/use-profile-store"
@@ -22,6 +23,7 @@ export function AssistantApp() {
     setBusy(true)
     setError(undefined)
     setNotice(undefined)
+    setAdvisory(null)
     try {
       const city = findCity(next.cityId)
       const response = await fetch("/api/advise", {
@@ -106,7 +108,15 @@ export function AssistantApp() {
             Saved in this browser only. The Gemini key never leaves the server.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="grid gap-4">
+          <SceneChips
+            profile={profile}
+            disabled={busy}
+            onPick={(next) => {
+              setProfile(next)
+              void advise(next)
+            }}
+          />
           <ProfileForm
             profile={profile}
             busy={busy}
@@ -143,7 +153,14 @@ export function AssistantApp() {
             Reading nearby air and writing a plan…
           </p>
         ) : null}
-        <AdvisoryPanel advisory={advisory} notice={notice} />
+        <AdvisoryPanel
+          advisory={advisory}
+          notice={notice}
+          persona={profile.persona}
+          activity={profile.activity}
+          duration={profile.duration}
+          timeWindow={profile.window}
+        />
       </div>
     </main>
   )

@@ -57,6 +57,8 @@ export const VERDICTS = {
 
 export type Verdict = keyof typeof VERDICTS
 
+export type MaskAdvice = "none" | "optional" | "recommended" | "n95"
+
 export type City = {
   id: string
   name: string
@@ -99,7 +101,7 @@ export type Decision = {
   headline: string
   reasons: string[]
   actions: string[]
-  mask: "none" | "optional" | "recommended" | "n95"
+  mask: MaskAdvice
   windows: string[]
   sensitive: boolean
 }

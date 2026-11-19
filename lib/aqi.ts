@@ -1,4 +1,4 @@
-import type { AqiCategory } from "@/lib/types"
+import { CATEGORIES, type AqiCategory, type Persona } from "@/lib/types"
 
 /**
  * CPCB National Ambient Air Quality Index uses 24-hour PM2.5 sub-index
@@ -36,11 +36,9 @@ export function cpcbPm25Index(pm25: number): number {
 }
 
 export function categoryRank(category: AqiCategory): number {
-  return ["Good", "Satisfactory", "Moderate", "Poor", "Very Poor", "Severe"].indexOf(
-    category,
-  )
+  return CATEGORIES.indexOf(category)
 }
 
-export function isSensitive(persona: string): boolean {
+export function isSensitive(persona: Persona): boolean {
   return persona === "parent" || persona === "elderly" || persona === "asthma"
 }

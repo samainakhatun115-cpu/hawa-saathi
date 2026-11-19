@@ -6,16 +6,33 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { ComparePersonas } from "@/components/compare-personas"
+import { LockedRules } from "@/components/locked-rules"
 import { copyText, maskLabel } from "@/lib/format"
-import { VERDICTS, type Advisory } from "@/lib/types"
+import {
+  VERDICTS,
+  type Activity,
+  type Advisory,
+  type Duration,
+  type Persona,
+  type TimeWindow,
+} from "@/lib/types"
 import { useState } from "react"
 
 export function AdvisoryPanel({
   advisory,
   notice,
+  persona,
+  activity,
+  duration,
+  timeWindow,
 }: {
   advisory: Advisory | null
   notice?: string
+  persona: Persona
+  activity: Activity
+  duration: Duration
+  timeWindow: TimeWindow
 }) {
   const [copied, setCopied] = useState(false)
 
@@ -58,6 +75,7 @@ export function AdvisoryPanel({
         <CardContent className="grid gap-4">
           <AirMeter snapshot={advisory.snapshot} />
           <HourStrip snapshot={advisory.snapshot} />
+          <LockedRules decision={decision} />
         </CardContent>
       </Card>
       <Card>
@@ -73,14 +91,25 @@ export function AdvisoryPanel({
             <List title="Comparatively better hours" items={decision.windows} />
           ) : null}
           <p className="text-xs text-muted-foreground">{advisory.disclaimer}</p>
+          <ComparePersonas
+            advisory={advisory}
+            persona={persona}
+            activity={activity}
+            duration={duration}
+            timeWindow={timeWindow}
+          />
           <div className="flex flex-wrap gap-2">
             <Button
               type="button"
               variant="outline"
               onClick={async () => {
-                await navigator.clipboard.writeText(copyText(advisory))
-                setCopied(true)
-                window.setTimeout(() => setCopied(false), 2000)
+                try {
+                  await navigator.clipboard.writeText(copyText(advisory))
+                  setCopied(true)
+                  window.setTimeout(() => setCopied(false), 2000)
+                } catch {
+                  setCopied(false)
+                }
               }}
             >
               {copied ? "Copied" : "Copy summary"}

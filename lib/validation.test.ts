@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { parseAdviseRequest } from "@/lib/validation"
+import { parseAdviseRequest, sanitizeProfile, starterProfile } from "@/lib/validation"
 
 describe("parseAdviseRequest", () => {
   const valid = {
@@ -55,5 +55,26 @@ describe("parseAdviseRequest", () => {
       cityId: "not-a-city",
     })
     expect(parsed.ok).toBe(false)
+  })
+})
+
+describe("sanitizeProfile", () => {
+  it("falls back to the starter profile when localStorage is junk", () => {
+    expect(sanitizeProfile({ persona: "alien" })).toEqual(starterProfile())
+    expect(sanitizeProfile(null)).toEqual(starterProfile())
+  })
+
+  it("keeps a known city and persona", () => {
+    const profile = sanitizeProfile({
+      cityId: "noida",
+      persona: "elderly",
+      activity: "outdoor_exercise",
+      duration: "one_hour",
+      window: "morning",
+      notes: "Daily park walk.",
+    })
+    expect(profile.cityId).toBe("noida")
+    expect(profile.persona).toBe("elderly")
+    expect(profile.latitude).toBeCloseTo(28.5355)
   })
 })
