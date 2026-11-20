@@ -1,4 +1,5 @@
-import { findCity } from "@/lib/cities"
+import { fallbackCity, findCity } from "@/lib/cities"
+import { MAX_CITY_NAME, MAX_NOTES } from "@/lib/constants"
 import {
   ACTIVITIES,
   DURATIONS,
@@ -6,9 +7,6 @@ import {
   WINDOWS,
   type AdviseRequest,
 } from "@/lib/types"
-
-const MAX_NOTES = 280
-const MAX_CITY_NAME = 80
 
 function isKey<T extends Record<string, string>>(table: T, value: unknown): value is keyof T {
   return typeof value === "string" && value in table
@@ -58,16 +56,17 @@ export function parseAdviseRequest(body: unknown): { ok: true; value: AdviseRequ
 }
 
 export function starterProfile(): AdviseRequest {
+  const city = findCity("karnal") ?? fallbackCity()
   return {
-    cityId: "karnal",
-    cityName: "Karnal",
+    cityId: city.id,
+    cityName: city.name,
     persona: "parent",
     activity: "school_run",
     duration: "under_30",
     window: "morning",
     notes: "Class 3 child, walks to the school gate.",
-    latitude: 29.6857,
-    longitude: 76.9905,
+    latitude: city.latitude,
+    longitude: city.longitude,
   }
 }
 

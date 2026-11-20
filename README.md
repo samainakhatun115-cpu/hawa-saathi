@@ -39,23 +39,29 @@ The Gemini API key is server-only (`GEMINI_API_KEY`). It is never sent to the br
 
 | Path | Role |
 | --- | --- |
-| `lib/verdict.ts` | Pure go/stay lock |
+| `lib/verdict.ts` | Pure go/stay lock (one function per outdoor vs stay-home band) |
 | `lib/decide-copy.ts` | Headlines, reasons, actions |
 | `lib/decide.ts` | Verdict + copy + quieter hours |
 | `lib/hours.ts` | Upcoming forecast hours |
 | `lib/aqi.ts` | CPCB-style PM2.5 index |
-| `lib/open-meteo.ts` | Live air, IST timestamps |
+| `lib/open-meteo.ts` | Fetch live air |
+| `lib/open-meteo-parse.ts` | Map Open-Meteo JSON → snapshot (IST timestamps) |
 | `lib/gemini.ts` | Server-only generateContent |
+| `lib/gemini-parse.ts` | Candidate text + JSON parse |
 | `lib/advisory.ts` | Merge locked decision with Gemini wording |
 | `lib/advisory-prompt.ts` | Gemini system + user prompt |
+| `lib/advisory-schema.ts` | Structured output schema |
 | `lib/advise-client.ts` | Browser POST to `/api/advise` |
 | `lib/geo.ts` | Geolocation → nearest city |
-| `lib/constants.ts` | Timeouts and route maxDuration |
+| `lib/city-profile.ts` | City pin + air-query coordinates |
+| `lib/compare.ts` | Same reading, other persona (no Gemini) |
+| `lib/constants.ts` | Timeouts, clip limits, fallback notice |
 | `lib/validation.ts` | Request parse + localStorage sanitize |
-| `app/api/advise/route.ts` | POST, no-store, 15s maxDuration |
+| `hooks/use-advise.ts` | Form submit / locate / busy state |
+| `app/api/advise/route.ts` | POST, no-store, 15s maxDuration (numeric literal) |
 | `components/scene-chips.tsx` | One-tap demo scenes (auto-reads the air) |
 | `components/locked-rules.tsx` | Shows what Gemini is not allowed to change |
-| `components/compare-personas.tsx` | Same reading, other persona, no extra Gemini call |
+| `components/compare-personas.tsx` | Renders `lib/compare.ts` |
 
 ## Assumptions
 
@@ -79,7 +85,7 @@ Without a key, you still get a live (or sample) reading and a rules-engine plan.
 | Script | What it does |
 | --- | --- |
 | `npm run dev` | Next.js on port 43127 |
-| `npm test` | Vitest: CPCB bands, verdict matrix, scenes, hours, validation, `/api/advise` |
+| `npm test` | Vitest: CPCB bands, verdict, Open-Meteo parse, Gemini parse, advisory compose, `/api/advise` |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run build` | Production build |
 | `npm run lint` | ESLint |

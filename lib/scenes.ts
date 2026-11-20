@@ -19,8 +19,6 @@ export const SCENES: Scene[] = [
       duration: "under_30",
       window: "morning",
       notes: "Class 3 child, walks to the school gate.",
-      latitude: 29.6857,
-      longitude: 76.9905,
     },
   },
   {
@@ -34,8 +32,6 @@ export const SCENES: Scene[] = [
       duration: "one_hour",
       window: "morning",
       notes: "Daily park walk, 60+.",
-      latitude: 28.5355,
-      longitude: 77.391,
     },
   },
   {
@@ -49,8 +45,6 @@ export const SCENES: Scene[] = [
       duration: "one_hour",
       window: "morning",
       notes: "Bus and last-mile walk to office. Has asthma.",
-      latitude: 22.5726,
-      longitude: 88.3639,
     },
   },
 ]
@@ -71,7 +65,7 @@ export function applyScene(id: string): AdviseRequest | undefined {
   const city = findCity(scene.profile.cityId)
   return {
     ...scene.profile,
-    latitude: city?.latitude ?? scene.profile.latitude,
-    longitude: city?.longitude ?? scene.profile.longitude,
+    latitude: city?.latitude,
+    longitude: city?.longitude,
   }
 }

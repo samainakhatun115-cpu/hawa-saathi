@@ -1,7 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { decide } from "@/lib/decide"
+import { COMPARE_PERSONAS, comparePersona } from "@/lib/compare"
 import { maskLabel } from "@/lib/format"
 import {
   PERSONAS,
@@ -13,8 +13,6 @@ import {
   type TimeWindow,
 } from "@/lib/types"
 import { useMemo, useState } from "react"
-
-const COMPARE: Persona[] = ["elderly", "asthma", "parent", "outdoor_worker", "adult"]
 
 export function ComparePersonas({
   advisory,
@@ -33,14 +31,8 @@ export function ComparePersonas({
   const selected = other === persona ? null : other
   const compared = useMemo(() => {
     if (!selected) return null
-    return decide({
-      persona: selected,
-      activity,
-      duration,
-      window: timeWindow,
-      snapshot: advisory.snapshot,
-    })
-  }, [activity, advisory.snapshot, duration, selected, timeWindow])
+    return comparePersona(advisory, selected, activity, duration, timeWindow)
+  }, [activity, advisory, duration, selected, timeWindow])
 
   return (
     <section className="grid gap-2" aria-labelledby="compare-heading">
@@ -51,7 +43,7 @@ export function ComparePersonas({
         Re-runs only the local rules on this reading. Gemini is not called again.
       </p>
       <div className="flex flex-wrap gap-2">
-        {COMPARE.filter((item) => item !== persona).map((item) => (
+        {COMPARE_PERSONAS.filter((item) => item !== persona).map((item) => (
           <Button
             key={item}
             type="button"

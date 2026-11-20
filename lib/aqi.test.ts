@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest"
-import { categoryFromPm25, categoryRank, cpcbPm25Index, isSensitive } from "@/lib/aqi"
+import {
+  RANK_POOR,
+  categoryFromPm25,
+  categoryRank,
+  cpcbPm25Index,
+  isSensitive,
+} from "@/lib/aqi"
 
 describe("CPCB-style PM2.5 bands", () => {
   it("maps the official breakpoint edges", () => {
@@ -27,6 +33,7 @@ describe("CPCB-style PM2.5 bands", () => {
 
   it("ranks worse air higher", () => {
     expect(categoryRank("Severe")).toBeGreaterThan(categoryRank("Good"))
+    expect(RANK_POOR).toBe(categoryRank("Poor"))
   })
 
   it("treats parent, elderly, and asthma as sensitive", () => {

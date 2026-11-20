@@ -19,12 +19,16 @@ export const CITIES: City[] = [
   { id: "hyderabad", name: "Hyderabad", state: "Telangana", latitude: 17.385, longitude: 78.4867 },
 ]
 
-export const CITY_ITEMS = Object.fromEntries(
+export const CITY_ITEMS: Record<string, string> = Object.fromEntries(
   CITIES.map((city) => [city.id, `${city.name}, ${city.state}`]),
-) as Record<string, string>
+)
 
 export function findCity(id: string): City | undefined {
   return CITIES.find((city) => city.id === id)
+}
+
+export function fallbackCity(): City {
+  return findCity("delhi") ?? CITIES[0]!
 }
 
 export function nearestCity(latitude: number, longitude: number): City {

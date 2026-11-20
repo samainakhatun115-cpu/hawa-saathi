@@ -102,4 +102,21 @@ describe("POST /api/advise", () => {
     expect(json.fallback).toBe(true)
     expect(json.notice).toMatch(/local rules engine/i)
   })
+
+  it("returns 400 when the body is not JSON", async () => {
+    const response = await POST(
+      new Request("http://localhost/api/advise", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "not-json",
+      }),
+    )
+    expect(response.status).toBe(400)
+  })
+
+  it("returns 401 when the Gemini key is rejected", async () => {
+    generate.mockRejectedValue(new GeminiError("The Gemini key was rejected.", 401))
+    const response = await post(profile)
+    expect(response.status).toBe(401)
+  })
 })

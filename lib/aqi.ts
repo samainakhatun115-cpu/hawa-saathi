@@ -35,6 +35,11 @@ export function cpcbPm25Index(pm25: number): number {
   return Math.round(Math.min(500, Math.max(0, index)))
 }
 
+export const RANK_GOOD = CATEGORIES.indexOf("Good")
+export const RANK_SATISFACTORY = CATEGORIES.indexOf("Satisfactory")
+export const RANK_MODERATE = CATEGORIES.indexOf("Moderate")
+export const RANK_POOR = CATEGORIES.indexOf("Poor")
+
 export function categoryRank(category: AqiCategory): number {
   return CATEGORIES.indexOf(category)
 }

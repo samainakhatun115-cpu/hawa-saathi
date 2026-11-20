@@ -1,14 +1,14 @@
 "use client"
 
 import { AirMeter } from "@/components/air-meter"
+import { CopySummaryButton } from "@/components/copy-summary-button"
 import { HourStrip } from "@/components/hour-strip"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ComparePersonas } from "@/components/compare-personas"
 import { LockedRules } from "@/components/locked-rules"
-import { copyText, maskLabel } from "@/lib/format"
+import { maskLabel } from "@/lib/format"
 import {
   VERDICTS,
   type Activity,
@@ -17,7 +17,6 @@ import {
   type Persona,
   type TimeWindow,
 } from "@/lib/types"
-import { useState } from "react"
 
 export function AdvisoryPanel({
   advisory,
@@ -34,8 +33,6 @@ export function AdvisoryPanel({
   duration: Duration
   timeWindow: TimeWindow
 }) {
-  const [copied, setCopied] = useState(false)
-
   if (!advisory) {
     return (
       <Card>
@@ -99,21 +96,7 @@ export function AdvisoryPanel({
             timeWindow={timeWindow}
           />
           <div className="flex flex-wrap gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={async () => {
-                try {
-                  await navigator.clipboard.writeText(copyText(advisory))
-                  setCopied(true)
-                  window.setTimeout(() => setCopied(false), 2000)
-                } catch {
-                  setCopied(false)
-                }
-              }}
-            >
-              {copied ? "Copied" : "Copy summary"}
-            </Button>
+            <CopySummaryButton advisory={advisory} />
             <p className="self-center text-xs text-muted-foreground">
               Written with {advisory.model === "rules-engine" ? "the local rules engine" : advisory.model}
             </p>
