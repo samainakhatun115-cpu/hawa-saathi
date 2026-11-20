@@ -2,8 +2,11 @@
 export const ADVISE_CLIENT_TIMEOUT_MS = 18_000
 export const GEO_TIMEOUT_MS = 8_000
 export const GEO_MAXIMUM_AGE_MS = 300_000
-export const OPEN_METEO_TIMEOUT_MS = 8_000
-export const GEMINI_TIMEOUT_MS = 7_000
+/** Air fetch fails over to a labeled sample, so keep this short and give Gemini the rest of the 15s route budget. */
+export const OPEN_METEO_TIMEOUT_MS = 4_000
+export const GEMINI_TIMEOUT_MS = 10_000
+/** Matches `export const maxDuration = 15` on POST /api/advise (must stay a numeric literal there). */
+export const ROUTE_TIME_BUDGET_MS = 15_000
 
 export const MAX_NOTES = 280
 export const MAX_CITY_NAME = 80

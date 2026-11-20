@@ -12,7 +12,7 @@ Live use: tap a scene (Karnal school run, Noida 60+ walk, Kolkata asthma commute
 
 1. **Numbers first.** Live PM2.5, PM10, ozone, NO₂, SO₂, and CO come from [Open-Meteo Air Quality](https://open-meteo.com/en/docs/air-quality-api) (no API key). If that call fails, the app uses a **labeled sample snapshot** instead of inventing readings.
 2. **A local rules engine locks the decision.** `lib/verdict.ts` applies CPCB National AQI PM2.5 breakpoints (0–30 Good, 31–60 Satisfactory, 61–90 Moderate, 91–120 Poor, 121–250 Very Poor, 250+ Severe) plus persona and activity. Gemini cannot change that verdict.
-3. **Gemini writes the words, not the science.** `POST /api/advise` sends the locked numbers and verdict to Gemini (`gemini-3.5-flash-lite`) for a short plan. If the key is missing or Gemini is slow (7s), the same rules engine fills the plan so the air reading still appears.
+3. **Gemini writes the words, not the science.** `POST /api/advise` sends the locked numbers and verdict to Gemini (`gemini-3.5-flash-lite`) for a short plan. If the key is missing or Gemini is slow (10s), the same rules engine fills the plan so the air reading still appears.
 4. **Honest labels.** The CPCB-style band is an **estimate from PM2.5**, not an official CPCB / SAFAR station AQI. Advice is practical, not medical.
 
 ## How it works
@@ -55,7 +55,7 @@ The Gemini API key is server-only (`GEMINI_API_KEY`). It is never sent to the br
 | `lib/geo.ts` | Geolocation → nearest city |
 | `lib/city-profile.ts` | City pin + air-query coordinates |
 | `lib/compare.ts` | Same reading, other persona (no Gemini) |
-| `lib/constants.ts` | Timeouts, clip limits, fallback notice |
+| `lib/constants.ts` | Timeouts, clip limits, fallback notice. Route maxDuration stays the literal `15`. |
 | `lib/validation.ts` | Request parse + localStorage sanitize |
 | `hooks/use-advise.ts` | Form submit / locate / busy state |
 | `app/api/advise/route.ts` | POST, no-store, 15s maxDuration (numeric literal) |

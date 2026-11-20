@@ -35,6 +35,7 @@ export function useAdvise() {
 
   async function locate() {
     setLocating(true)
+    setError(undefined)
     try {
       const result = await locateProfile(profile, navigator.geolocation)
       if (!result.ok) {

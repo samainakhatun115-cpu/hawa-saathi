@@ -23,7 +23,7 @@ export function HourStrip({ snapshot }: { snapshot: AirSnapshot }) {
                 className={`flex min-w-14 flex-col items-center rounded-lg px-2 py-2 text-center band-${categoryTone(row.category)}`}
                 aria-label={`${label}, ${pm25} micrograms per cubic metre, ${row.category}`}
               >
-                <span className="text-[11px] opacity-80" aria-hidden>
+                <span className="text-xs opacity-80" aria-hidden>
                   {label}
                 </span>
                 <span className="text-sm font-medium" aria-hidden>

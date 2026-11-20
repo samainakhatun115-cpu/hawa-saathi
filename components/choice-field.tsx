@@ -35,7 +35,7 @@ export function ChoiceField<T extends string>({
           if (typeof next === "string" && next in items) onChange(next as T)
         }}
       >
-        <SelectTrigger id={id} className="h-10 w-full">
+        <SelectTrigger id={id} className="h-11 min-h-11 w-full">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>

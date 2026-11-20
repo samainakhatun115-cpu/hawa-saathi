@@ -52,7 +52,7 @@ export function AdvisoryPanel({
   return (
     <div className="grid gap-4" aria-live="polite">
       {notice ? (
-        <Alert>
+        <Alert role="status">
           <AlertTitle>Plan is ready</AlertTitle>
           <AlertDescription>{notice}</AlertDescription>
         </Alert>
@@ -112,8 +112,8 @@ function List({ title, items }: { title: string; items: string[] }) {
     <section>
       <h3 className="mb-1 font-medium">{title}</h3>
       <ul className="list-disc space-y-1 pl-5">
-        {items.map((item) => (
-          <li key={item}>{item}</li>
+        {items.map((item, index) => (
+          <li key={`${title}-${index}`}>{item}</li>
         ))}
       </ul>
     </section>

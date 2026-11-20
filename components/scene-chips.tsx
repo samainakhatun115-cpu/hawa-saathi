@@ -22,7 +22,7 @@ export function SceneChips({
           <Button
             key={scene.id}
             type="button"
-            size="sm"
+            className="min-h-11"
             variant={active === scene.id ? "default" : "outline"}
             disabled={disabled}
             aria-pressed={active === scene.id}

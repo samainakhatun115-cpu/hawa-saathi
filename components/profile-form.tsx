@@ -40,10 +40,17 @@ export function ProfileForm({
         disabled={busy}
       />
       <div className="flex flex-wrap items-center gap-2">
-        <Button type="button" variant="outline" size="sm" onClick={onLocate} disabled={busy || locating}>
+        <Button
+          type="button"
+          variant="outline"
+          className="min-h-11"
+          onClick={onLocate}
+          disabled={busy || locating}
+          aria-describedby="location-note"
+        >
           {locating ? "Finding you…" : "Use my location"}
         </Button>
-        <p className="text-xs text-muted-foreground">
+        <p id="location-note" className="text-xs text-muted-foreground">
           Location stays in this browser. We only send coordinates to read nearby air.
         </p>
       </div>
@@ -88,12 +95,15 @@ export function ProfileForm({
           value={profile.notes}
           maxLength={280}
           disabled={busy}
+          aria-describedby="notes-count"
           onChange={(event) => onChange("notes", event.target.value)}
           placeholder="Walks to the school gate. Child has a mild cough this week."
         />
-        <p className="text-xs text-muted-foreground">{profile.notes.length}/280</p>
+        <p id="notes-count" className="text-xs text-muted-foreground">
+          {profile.notes.length}/280
+        </p>
       </div>
-      <Button type="submit" className="h-10" disabled={busy}>
+      <Button type="submit" className="min-h-11" disabled={busy}>
         {busy ? "Reading the air…" : "Should I go out?"}
       </Button>
     </form>

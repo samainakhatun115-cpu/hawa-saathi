@@ -78,4 +78,19 @@ describe("generateJson", () => {
     })
     expect(fetchImpl).toHaveBeenCalledTimes(1)
   })
+
+  it("maps a network failure to 502", async () => {
+    process.env.GEMINI_API_KEY = "test-key"
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        throw new Error("offline")
+      }),
+    )
+    const { generateJson } = await loadGemini()
+    await expect(generateJson({ system: "s", user: "u", schema: {} })).rejects.toMatchObject({
+      name: "GeminiError",
+      status: 502,
+    })
+  })
 })

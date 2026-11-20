@@ -12,6 +12,8 @@ export function CopySummaryButton({ advisory }: { advisory: Advisory }) {
     <Button
       type="button"
       variant="outline"
+      className="min-h-11"
+      aria-live="polite"
       onClick={async () => {
         try {
           await navigator.clipboard.writeText(copyText(advisory))

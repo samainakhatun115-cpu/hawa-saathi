@@ -47,10 +47,10 @@ export function ComparePersonas({
           <Button
             key={item}
             type="button"
-            size="sm"
+            className="min-h-11"
             variant={selected === item ? "default" : "outline"}
             aria-pressed={selected === item}
-            onClick={() => setOther(item)}
+            onClick={() => setOther((prev) => (prev === item ? null : item))}
           >
             {PERSONAS[item]}
           </Button>

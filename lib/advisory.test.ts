@@ -84,4 +84,20 @@ describe("defaultsNotToDo", () => {
     const advisory = localAdvisory(starterProfile(), snapshot)
     expect(defaultsNotToDo(advisory.decision).join(" ")).toMatch(/playground/)
   })
+
+  it("uses the lighter skip list when going out is allowed", () => {
+    const good = {
+      ...snapshot,
+      pm25: 12,
+      category: "Good" as const,
+      cpcbPm25Index: 20,
+      source: "open-meteo" as const,
+    }
+    const advisory = localAdvisory(
+      { ...starterProfile(), persona: "adult", activity: "errands" },
+      good,
+    )
+    expect(advisory.decision.verdict).toBe("go")
+    expect(defaultsNotToDo(advisory.decision).join(" ")).toMatch(/tightness in the chest/)
+  })
 })
