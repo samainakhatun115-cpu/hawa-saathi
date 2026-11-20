@@ -2,10 +2,10 @@ import { buildAdvisory, localAdvisory } from "@/lib/advisory"
 import { findCity } from "@/lib/cities"
 import { GeminiError } from "@/lib/gemini"
 import { fetchAirSnapshot } from "@/lib/open-meteo"
-import { ROUTE_MAX_DURATION_S } from "@/lib/constants"
 import { parseAdviseRequest } from "@/lib/validation"
 
-export const maxDuration = ROUTE_MAX_DURATION_S
+/** Vercel requires a numeric literal here, not an imported constant. */
+export const maxDuration = 15
 
 export async function POST(request: Request) {
   let body: unknown
