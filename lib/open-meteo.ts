@@ -1,8 +1,7 @@
 import { cpcbPm25Index, categoryFromPm25 } from "@/lib/aqi"
+import { OPEN_METEO_TIMEOUT_MS } from "@/lib/constants"
 import { sampleSnapshot } from "@/lib/sample-snapshot"
 import type { AirSnapshot } from "@/lib/types"
-
-const TIMEOUT_MS = 8000
 const ENDPOINT = "https://air-quality-api.open-meteo.com/v1/air-quality"
 
 type OpenMeteoResponse = {
@@ -42,7 +41,7 @@ export async function fetchAirSnapshot(input: {
 
   try {
     const response = await fetch(url, {
-      signal: AbortSignal.timeout(TIMEOUT_MS),
+      signal: AbortSignal.timeout(OPEN_METEO_TIMEOUT_MS),
       headers: { Accept: "application/json" },
       cache: "no-store",
     })

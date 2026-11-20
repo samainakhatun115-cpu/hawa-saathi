@@ -41,3 +41,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local demo videos — do not ship in the GitHub repo
+*.mp4
+*.webm

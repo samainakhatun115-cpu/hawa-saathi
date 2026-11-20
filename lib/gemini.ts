@@ -1,7 +1,7 @@
+import { GEMINI_TIMEOUT_MS } from "@/lib/constants"
 import { readGeminiKey, readServerEnv } from "@/lib/env"
 
 const DEFAULT_MODEL = "gemini-3.5-flash-lite"
-const TIMEOUT_MS = 7_000
 
 export class GeminiError extends Error {
   constructor(
@@ -49,7 +49,7 @@ async function callGemini<T>(
 ): Promise<T> {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`
   const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS)
+  const timer = setTimeout(() => controller.abort(), GEMINI_TIMEOUT_MS)
   let response: Response
   try {
     response = await fetch(url, {

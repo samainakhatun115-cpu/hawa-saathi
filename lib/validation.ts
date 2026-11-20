@@ -4,11 +4,7 @@ import {
   DURATIONS,
   PERSONAS,
   WINDOWS,
-  type Activity,
   type AdviseRequest,
-  type Duration,
-  type Persona,
-  type TimeWindow,
 } from "@/lib/types"
 
 const MAX_NOTES = 280
@@ -50,10 +46,10 @@ export function parseAdviseRequest(body: unknown): { ok: true; value: AdviseRequ
     value: {
       cityId: city?.id ?? "custom",
       cityName: city?.name ?? cityName,
-      persona: data.persona as Persona,
-      activity: data.activity as Activity,
-      duration: data.duration as Duration,
-      window: data.window as TimeWindow,
+      persona: data.persona,
+      activity: data.activity,
+      duration: data.duration,
+      window: data.window,
       notes,
       latitude: latitude ?? city?.latitude,
       longitude: longitude ?? city?.longitude,

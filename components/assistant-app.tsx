@@ -6,7 +6,9 @@ import { SceneChips } from "@/components/scene-chips"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useProfileStore } from "@/hooks/use-profile-store"
-import { findCity, nearestCity } from "@/lib/cities"
+import { requestAdvisory } from "@/lib/advise-client"
+import { applyCityId } from "@/lib/city-profile"
+import { locateProfile } from "@/lib/geo"
 import type { Advisory, AdviseRequest } from "@/lib/types"
 import { Wind } from "lucide-react"
 import { useState } from "react"
@@ -19,69 +21,30 @@ export function AssistantApp() {
   const [busy, setBusy] = useState(false)
   const [locating, setLocating] = useState(false)
 
-  async function advise(next = profile) {
+  async function advise(next: AdviseRequest = profile) {
     setBusy(true)
     setError(undefined)
     setNotice(undefined)
     setAdvisory(null)
-    try {
-      const city = findCity(next.cityId)
-      const response = await fetch("/api/advise", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...next,
-          latitude: next.latitude ?? city?.latitude,
-          longitude: next.longitude ?? city?.longitude,
-          cityName: city?.name ?? next.cityName,
-        } satisfies AdviseRequest),
-        signal: AbortSignal.timeout(18_000),
-      })
-      const payload = (await response.json()) as Advisory & { error?: string; notice?: string }
-      if (!response.ok) {
-        setError(payload.error || "Could not read the air just now.")
-        return
-      }
-      setAdvisory(payload)
-      setNotice(payload.notice)
-    } catch (error) {
-      const timedOut =
-        error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError")
-      setError(
-        timedOut
-          ? "That took too long. Tap Should I go out? once more."
-          : "Network error. Check your connection and try again.",
-      )
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  function locate() {
-    if (!navigator.geolocation) {
-      setError("This browser cannot share location. Pick a city instead.")
+    const result = await requestAdvisory(next)
+    setBusy(false)
+    if (!result.ok) {
+      setError(result.error)
       return
     }
+    setAdvisory(result.advisory)
+    setNotice(result.notice)
+  }
+
+  async function locate() {
     setLocating(true)
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const city = nearestCity(position.coords.latitude, position.coords.longitude)
-        const next = {
-          ...profile,
-          cityId: city.id,
-          cityName: city.name,
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-        }
-        setProfile(next)
-        setLocating(false)
-      },
-      () => {
-        setLocating(false)
-        setError("Location was blocked. Pick a city from the list.")
-      },
-      { timeout: 8000, maximumAge: 300000 },
-    )
+    const result = await locateProfile(profile, navigator.geolocation)
+    setLocating(false)
+    if (!result.ok) {
+      setError(result.error)
+      return
+    }
+    setProfile(result.profile)
   }
 
   return (
@@ -123,19 +86,12 @@ export function AssistantApp() {
             locating={locating}
             onChange={(key, value) => {
               if (key === "cityId" && typeof value === "string") {
-                const city = findCity(value)
-                setProfile({
-                  ...profile,
-                  cityId: value,
-                  cityName: city?.name,
-                  latitude: city?.latitude,
-                  longitude: city?.longitude,
-                })
+                setProfile(applyCityId(profile, value))
                 return
               }
               update(key, value)
             }}
-            onLocate={locate}
+            onLocate={() => void locate()}
             onSubmit={() => void advise()}
           />
         </CardContent>

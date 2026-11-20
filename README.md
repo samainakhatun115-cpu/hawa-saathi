@@ -47,6 +47,10 @@ The Gemini API key is server-only (`GEMINI_API_KEY`). It is never sent to the br
 | `lib/open-meteo.ts` | Live air, IST timestamps |
 | `lib/gemini.ts` | Server-only generateContent |
 | `lib/advisory.ts` | Merge locked decision with Gemini wording |
+| `lib/advisory-prompt.ts` | Gemini system + user prompt |
+| `lib/advise-client.ts` | Browser POST to `/api/advise` |
+| `lib/geo.ts` | Geolocation → nearest city |
+| `lib/constants.ts` | Timeouts and route maxDuration |
 | `lib/validation.ts` | Request parse + localStorage sanitize |
 | `app/api/advise/route.ts` | POST, no-store, 15s maxDuration |
 | `components/scene-chips.tsx` | One-tap demo scenes (auto-reads the air) |
